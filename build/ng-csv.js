@@ -38,7 +38,7 @@ if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.ex
 angular.module('ngCsv.services').
   service('CSV', ['$q', function ($q) {
 
-    var EOL = '\r\n';
+    var EOL = '\n';
     var BOM = "\ufeff";
 
     var specialChars = {
@@ -90,7 +90,17 @@ angular.module('ngCsv.services').
       return +input === input && (!isFinite(input) || Boolean(input % 1));
     };
 
-    /**
+  this.toUtf16LE = function(str) {
+    var out = str;
+    var byteArray = new Uint8Array(out.length * 2);
+    for (var i = 0; i < out.length; i++) {
+      byteArray[i*2] = out.charCodeAt(i); // & 0xff;
+      byteArray[i*2+1] = out.charCodeAt(i) >> 8; // & 0xff;
+    }
+    return byteArray;
+  };
+
+  /**
      * Creates a csv from a data array
      * @param data
      * @param options
@@ -107,6 +117,9 @@ angular.module('ngCsv.services').
       var csvContent = "";
 
       var dataPromise = $q.when(data).then(function (responseData) {
+        if (options.addSepHeader) {
+          csvContent += 'sep=' + options.fieldSep + EOL;
+        }
         //responseData = angular.copy(responseData);//moved to row creation
         // Check if there's a provided header array
         if (angular.isDefined(options.header) && options.header) {
@@ -135,8 +148,11 @@ angular.module('ngCsv.services').
             var labelArray, labelString;
 
             labelArray = [];
-            angular.forEach(arrData[0], function(value, label) {
-                this.push(that.stringifyField(label, options));
+
+            var iterator = !!options.columnOrder ? options.columnOrder : arrData[0];
+            angular.forEach(iterator, function(value, label) {
+                var val = !!options.columnOrder ? value : label;
+                this.push(that.stringifyField(val, options));
             }, labelArray);
             labelString = labelArray.join(options.fieldSep ? options.fieldSep : ",");
             csvContent += labelString + EOL;
@@ -165,6 +181,7 @@ angular.module('ngCsv.services').
 
         // Append the content and resolve.
         csv += csvContent;
+        csv = that.toUtf16LE(csv);
         def.resolve(csv);
       });
 
@@ -212,6 +229,7 @@ angular.module('ngCsv.directives').
         data: '&ngCsv',
         filename: '@filename',
         header: '&csvHeader',
+        addSepHeader: '@addSeparatorHeader',
         columnOrder: '&csvColumnOrder',
         txtDelim: '@textDelimiter',
         decimalSep: '@decimalSeparator',
@@ -248,13 +266,14 @@ angular.module('ngCsv.directives').
               txtDelim: $scope.txtDelim ? $scope.txtDelim : '"',
               decimalSep: $scope.decimalSep ? $scope.decimalSep : '.',
               quoteStrings: $scope.quoteStrings,
-              addByteOrderMarker: $scope.addByteOrderMarker
+              addByteOrderMarker: $scope.addByteOrderMarker,
+              addSepHeader: $scope.addSepHeader
             };
             if (angular.isDefined($attrs.csvHeader)) options.header = $scope.$eval($scope.header);
             if (angular.isDefined($attrs.csvColumnOrder)) options.columnOrder = $scope.$eval($scope.columnOrder);
             if (angular.isDefined($attrs.csvLabel)) options.label = $scope.$eval($scope.label);
 
-            options.fieldSep = $scope.fieldSep ? $scope.fieldSep : ",";
+            options.fieldSep = $scope.fieldSep ? $scope.fieldSep : "\t";
 
             // Replaces any badly formatted special character string with correct special character
             options.fieldSep = CSV.isSpecialChar(options.fieldSep) ? CSV.getSpecialChar(options.fieldSep) : options.fieldSep;
@@ -284,8 +303,8 @@ angular.module('ngCsv.directives').
       ],
       link: function (scope, element, attrs) {
         function doClick() {
-          var charset = scope.charset || "utf-8";
-          var blob = new Blob([scope.csv], {
+          var charset = scope.charset || "utf-16LE";
+          var blob = new Blob([scope.csv.buffer], {
             type: "text/csv;charset="+ charset + ";"
           });
 
