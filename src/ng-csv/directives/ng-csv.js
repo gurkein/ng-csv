@@ -12,6 +12,7 @@ angular.module('ngCsv.directives').
         data: '&ngCsv',
         filename: '@filename',
         header: '&csvHeader',
+        addSepHeader: '@addSeparatorHeader',
         columnOrder: '&csvColumnOrder',
         txtDelim: '@textDelimiter',
         decimalSep: '@decimalSeparator',
@@ -48,13 +49,14 @@ angular.module('ngCsv.directives').
               txtDelim: $scope.txtDelim ? $scope.txtDelim : '"',
               decimalSep: $scope.decimalSep ? $scope.decimalSep : '.',
               quoteStrings: $scope.quoteStrings,
-              addByteOrderMarker: $scope.addByteOrderMarker
+              addByteOrderMarker: $scope.addByteOrderMarker,
+              addSepHeader: $scope.addSepHeader
             };
             if (angular.isDefined($attrs.csvHeader)) options.header = $scope.$eval($scope.header);
             if (angular.isDefined($attrs.csvColumnOrder)) options.columnOrder = $scope.$eval($scope.columnOrder);
             if (angular.isDefined($attrs.csvLabel)) options.label = $scope.$eval($scope.label);
 
-            options.fieldSep = $scope.fieldSep ? $scope.fieldSep : ",";
+            options.fieldSep = $scope.fieldSep ? $scope.fieldSep : "\t";
 
             // Replaces any badly formatted special character string with correct special character
             options.fieldSep = CSV.isSpecialChar(options.fieldSep) ? CSV.getSpecialChar(options.fieldSep) : options.fieldSep;
@@ -84,8 +86,8 @@ angular.module('ngCsv.directives').
       ],
       link: function (scope, element, attrs) {
         function doClick() {
-          var charset = scope.charset || "utf-8";
-          var blob = new Blob([scope.csv], {
+          var charset = scope.charset || "utf-16LE";
+          var blob = new Blob([scope.csv.buffer], {
             type: "text/csv;charset="+ charset + ";"
           });
 

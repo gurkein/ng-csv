@@ -4,7 +4,7 @@
 angular.module('ngCsv.services').
   service('CSV', ['$q', function ($q) {
 
-    var EOL = '\r\n';
+    var EOL = '\n';
     var BOM = "\ufeff";
 
     var specialChars = {
@@ -56,7 +56,17 @@ angular.module('ngCsv.services').
       return +input === input && (!isFinite(input) || Boolean(input % 1));
     };
 
-    /**
+  this.toUtf16LE = function(str) {
+    var out = str;
+    var byteArray = new Uint8Array(out.length * 2);
+    for (var i = 0; i < out.length; i++) {
+      byteArray[i*2] = out.charCodeAt(i); // & 0xff;
+      byteArray[i*2+1] = out.charCodeAt(i) >> 8; // & 0xff;
+    }
+    return byteArray;
+  };
+
+  /**
      * Creates a csv from a data array
      * @param data
      * @param options
@@ -73,6 +83,9 @@ angular.module('ngCsv.services').
       var csvContent = "";
 
       var dataPromise = $q.when(data).then(function (responseData) {
+        if (options.addSepHeader) {
+          csvContent += 'sep=' + options.fieldSep + EOL;
+        }
         //responseData = angular.copy(responseData);//moved to row creation
         // Check if there's a provided header array
         if (angular.isDefined(options.header) && options.header) {
@@ -134,6 +147,7 @@ angular.module('ngCsv.services').
 
         // Append the content and resolve.
         csv += csvContent;
+        csv = that.toUtf16LE(csv);
         def.resolve(csv);
       });
 
