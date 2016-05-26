@@ -48,8 +48,8 @@ angular.module('ngCsv.directives').
             var options = {
               txtDelim: $scope.txtDelim ? $scope.txtDelim : '"',
               decimalSep: $scope.decimalSep ? $scope.decimalSep : '.',
-              quoteStrings: $scope.quoteStrings,
-              addByteOrderMarker: $scope.addByteOrderMarker,
+              quoteStrings: $scope.quoteStrings !== undefined ? $scope.quoteStrings : true,
+              addByteOrderMarker: $scope.addByteOrderMarker !== undefined ? $scope.addByteOrderMarker : true,
               addSepHeader: $scope.addSepHeader
             };
             if (angular.isDefined($attrs.csvHeader)) options.header = $scope.$eval($scope.header);
