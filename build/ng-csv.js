@@ -318,8 +318,8 @@ angular.module('ngCsv.directives').
             var url = window.URL.createObjectURL(blob);
             downloadLink.attr('href', url);
             downloadLink.attr('download', scope.getFilename());
-            if ($scope.target) {
-              downloadLink.attr('target', $scope.target);
+            if (scope.target) {
+              downloadLink.attr('target', scope.target);
             }
 
             $document.find('body').append(downloadContainer);
