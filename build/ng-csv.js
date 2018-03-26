@@ -239,7 +239,8 @@ angular.module('ngCsv.directives').
         addByteOrderMarker: "@addBom",
         ngClick: '&',
         charset: '@charset',
-        label: '&csvLabel'
+        label: '&csvLabel',
+        target: '@target'
       },
       controller: [
         '$scope',
@@ -314,14 +315,18 @@ angular.module('ngCsv.directives').
 
             var downloadContainer = angular.element('<div data-tap-disabled="true"><a></a></div>');
             var downloadLink = angular.element(downloadContainer.children()[0]);
-            downloadLink.attr('href', window.URL.createObjectURL(blob));
+            var url = window.URL.createObjectURL(blob);
+            downloadLink.attr('href', url);
             downloadLink.attr('download', scope.getFilename());
-            downloadLink.attr('target', '_blank');
+            if ($scope.target) {
+              downloadLink.attr('target', $scope.target);
+            }
 
             $document.find('body').append(downloadContainer);
             $timeout(function () {
               downloadLink[0].click();
               downloadLink.remove();
+              window.URL.revokeObjectURL(url);
             }, null);
           }
         }
